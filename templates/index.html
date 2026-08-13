@@ -65,8 +65,58 @@
 
 </section>
 
+
 <!-- =====================================================
-     POSTS
+     SEARCH SECTION
+====================================================== -->
+
+<section class="section search-section">
+
+    <div class="container">
+
+        <div class="section-header">
+
+            <h2 class="section-title">
+                Search Posts
+            </h2>
+
+        </div>
+
+        <form
+            action="{{ url_for('main.search') }}"
+            method="GET"
+            class="search-form"
+        >
+
+            <div class="search-input-wrapper">
+
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ search_query|default('') }}"
+                    placeholder="Search posts by title or content..."
+                    aria-label="Search posts"
+                    autocomplete="off"
+                >
+
+                <button
+                    type="submit"
+                    class="btn btn-primary search-button"
+                >
+                    Search
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     POSTS SECTION
 ====================================================== -->
 
 <section class="section">
@@ -76,10 +126,21 @@
         <div class="section-header">
 
             <h2 class="section-title">
-                Latest Posts
+
+                {% if search_query is defined and search_query %}
+
+                    Search Results for "{{ search_query }}"
+
+                {% else %}
+
+                    Latest Posts
+
+                {% endif %}
+
             </h2>
 
         </div>
+
 
         {% if posts %}
 
@@ -88,6 +149,10 @@
                 {% for post in posts %}
 
                     <article class="post-card">
+
+                        <!-- ==============================
+                             POST IMAGE
+                        =============================== -->
 
                         {% if post.image %}
 
@@ -108,6 +173,11 @@
 
                         {% endif %}
 
+
+                        <!-- ==============================
+                             POST CONTENT
+                        =============================== -->
+
                         <div class="post-card-content">
 
                             <h2>
@@ -123,6 +193,7 @@
 
                             </h2>
 
+
                             <div class="post-meta">
 
                                 By
@@ -137,7 +208,14 @@
                                     '%d %b %Y'
                                 ) }}
 
+                                {% if post.published %}
+
+                                    · Published
+
+                                {% endif %}
+
                             </div>
+
 
                             <p class="post-excerpt">
 
@@ -152,6 +230,7 @@
                                 {% endif %}
 
                             </p>
+
 
                             <a
                                 href="{{ url_for(
@@ -171,36 +250,63 @@
 
             </div>
 
+
         {% else %}
+
+            <!-- ==========================================
+                 NO POSTS / NO SEARCH RESULTS
+            =========================================== -->
 
             <div class="empty-state">
 
-                <h2>
-                    No posts yet
-                </h2>
+                {% if search_query is defined and search_query %}
 
-                <p>
-                    Be the first person to publish
-                    a blog post.
-                </p>
+                    <h2>
+                        No Posts Found
+                    </h2>
 
-                {% if current_user.is_authenticated %}
+                    <p>
+                        No posts matched your search for
+                        "<strong>{{ search_query }}</strong>".
+                    </p>
 
                     <a
-                        href="{{ url_for('main.create_post') }}"
+                        href="{{ url_for('main.index') }}"
                         class="btn btn-primary"
                     >
-                        Create First Post
+                        View All Posts
                     </a>
 
                 {% else %}
 
-                    <a
-                        href="{{ url_for('auth.register') }}"
-                        class="btn btn-primary"
-                    >
-                        Create an Account
-                    </a>
+                    <h2>
+                        No Posts Yet
+                    </h2>
+
+                    <p>
+                        Be the first person to publish
+                        a blog post.
+                    </p>
+
+                    {% if current_user.is_authenticated %}
+
+                        <a
+                            href="{{ url_for('main.create_post') }}"
+                            class="btn btn-primary"
+                        >
+                            Create First Post
+                        </a>
+
+                    {% else %}
+
+                        <a
+                            href="{{ url_for('auth.register') }}"
+                            class="btn btn-primary"
+                        >
+                            Create an Account
+                        </a>
+
+                    {% endif %}
 
                 {% endif %}
 

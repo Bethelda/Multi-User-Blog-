@@ -16,6 +16,8 @@ from flask_login import (
     login_required
 )
 
+from sqlalchemy import or_
+
 from werkzeug.utils import secure_filename
 
 from db import db
@@ -170,8 +172,12 @@ def dashboard():
 
     posts = (
         Post.query
-        .filter_by(user_id=current_user.id)
-        .order_by(Post.created_at.desc())
+        .filter_by(
+            user_id=current_user.id
+        )
+        .order_by(
+            Post.created_at.desc()
+        )
         .all()
     )
 
@@ -185,7 +191,10 @@ def dashboard():
 # CREATE POST
 # ==========================================================
 
-@main_bp.route("/create-post", methods=["GET", "POST"])
+@main_bp.route(
+    "/create-post",
+    methods=["GET", "POST"]
+)
 @login_required
 def create_post():
 
@@ -210,6 +219,7 @@ def create_post():
         )
 
         if not title:
+
             flash(
                 "Please enter a post title.",
                 "danger"
@@ -220,6 +230,7 @@ def create_post():
             )
 
         if not content:
+
             flash(
                 "Please enter post content.",
                 "danger"
@@ -372,6 +383,7 @@ def edit_post(post_id):
             post.image = new_image
 
             if old_image:
+
                 delete_uploaded_file(
                     old_image
                 )
@@ -427,6 +439,7 @@ def delete_post(post_id):
     db.session.commit()
 
     if image:
+
         delete_uploaded_file(
             image
         )
@@ -447,7 +460,10 @@ def delete_post(post_id):
 # PROFILE
 # ==========================================================
 
-@main_bp.route("/profile")
+@main_bp.route(
+    "/profile",
+    methods=["GET"]
+)
 @login_required
 def profile():
 
@@ -475,31 +491,51 @@ def profile():
 
 @main_bp.route(
     "/profile",
-    methods=["GET", "POST"]
+    methods=["POST"]
 )
 @login_required
 def update_profile():
 
-    if request.method == "POST":
+    full_name = request.form.get(
+        "full_name",
+        ""
+    ).strip()
 
-        full_name = request.form.get(
-            "full_name",
-            ""
-        ).strip()
+    bio = request.form.get(
+        "bio",
+        ""
+    ).strip()
 
-        bio = request.form.get(
-            "bio",
-            ""
-        ).strip()
+    profile_image = request.files.get(
+        "profile_image"
+    )
 
-        profile_image = request.files.get(
-            "profile_image"
+    if not full_name:
+
+        flash(
+            "Full name is required.",
+            "danger"
         )
 
-        if not full_name:
+        return redirect(
+            url_for(
+                "main.profile"
+            )
+        )
+
+    current_user.full_name = full_name
+    current_user.bio = bio
+
+    if profile_image and profile_image.filename:
+
+        new_image = save_uploaded_file(
+            profile_image
+        )
+
+        if new_image is None:
 
             flash(
-                "Full name is required.",
+                "Invalid profile image.",
                 "danger"
             )
 
@@ -509,53 +545,27 @@ def update_profile():
                 )
             )
 
-        current_user.full_name = full_name
-        current_user.bio = bio
+        old_image = current_user.profile_image
 
-        if profile_image and profile_image.filename:
+        current_user.profile_image = new_image
 
-            new_image = save_uploaded_file(
-                profile_image
+        if old_image:
+
+            delete_uploaded_file(
+                old_image
             )
 
-            if new_image is None:
+    db.session.commit()
 
-                flash(
-                    "Invalid profile image.",
-                    "danger"
-                )
+    flash(
+        "Profile updated successfully!",
+        "success"
+    )
 
-                return redirect(
-                    url_for(
-                        "main.profile"
-                    )
-                )
-
-            old_image = current_user.profile_image
-
-            current_user.profile_image = new_image
-
-            if old_image:
-                delete_uploaded_file(
-                    old_image
-                )
-
-        db.session.commit()
-
-        flash(
-            "Profile updated successfully!",
-            "success"
+    return redirect(
+        url_for(
+            "main.profile"
         )
-
-        return redirect(
-            url_for(
-                "main.profile"
-            )
-        )
-
-    return render_template(
-        "profile.html",
-        user=current_user
     )
 
 
@@ -571,26 +581,30 @@ def search():
         ""
     ).strip()
 
-    posts = []
+    if not query:
 
-    if query:
-
-        search_term = f"%{query}%"
-
-        posts = (
-            Post.query
-            .filter(
-                Post.published.is_(True),
-                db.or_(
-                    Post.title.ilike(search_term),
-                    Post.content.ilike(search_term)
-                )
-            )
-            .order_by(
-                Post.created_at.desc()
-            )
-            .all()
+        return render_template(
+            "index.html",
+            posts=[],
+            search_query=""
         )
+
+    search_term = f"%{query}%"
+
+    posts = (
+        Post.query
+        .filter(
+            Post.published.is_(True),
+            or_(
+                Post.title.ilike(search_term),
+                Post.content.ilike(search_term)
+            )
+        )
+        .order_by(
+            Post.created_at.desc()
+        )
+        .all()
+    )
 
     return render_template(
         "index.html",
