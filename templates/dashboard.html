@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Dashboard - MultiUserBlog
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <!-- =================================================
+         DASHBOARD HEADER
+    ================================================== -->
+
+    <section class="dashboard-header">
+
+        <h1>
+            Welcome, {{ current_user.full_name }}!
+        </h1>
+
+        <p>
+            Manage your blog posts and account from here.
+        </p>
+
+        <div class="dashboard-actions">
+
+            <a
+                href="{{ url_for('main.create_post') }}"
+                class="btn btn-primary"
+            >
+                + Create New Post
+            </a>
+
+            <a
+                href="{{ url_for('main.profile') }}"
+                class="btn btn-secondary"
+            >
+                Edit Profile
+            </a>
+
+        </div>
+
+    </section>
+
+    <!-- =================================================
+         STATISTICS
+    ================================================== -->
+
+    <section class="dashboard-grid">
+
+        <div class="stat-card">
+
+            <h3>
+                Your Posts
+            </h3>
+
+            <div class="stat-number">
+                {{ posts|length }}
+            </div>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>
+                Username
+            </h3>
+
+            <div
+                class="stat-number"
+                style="font-size: 22px;"
+            >
+                @{{ current_user.username }}
+            </div>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h3>
+                Account Type
+            </h3>
+
+            <div
+                class="stat-number"
+                style="font-size: 22px;"
+            >
+
+                {% if current_user.role == 'admin' %}
+                    Administrator
+                {% else %}
+                    User
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- =================================================
+         USER POSTS
+    ================================================== -->
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <h2 class="section-title">
+                My Posts
+            </h2>
+
+        </div>
+
+        {% if posts %}
+
+            <div class="post-grid">
+
+                {% for post in posts %}
+
+                    <article class="post-card">
+
+                        {% if post.image %}
+
+                            <img
+                                src="{{ url_for(
+                                    'static',
+                                    filename='uploads/' + post.image
+                                ) }}"
+                                alt="{{ post.title }}"
+                                class="post-card-image"
+                            >
+
+                        {% else %}
+
+                            <div class="post-card-placeholder">
+                                ✍
+                            </div>
+
+                        {% endif %}
+
+                        <div class="post-card-content">
+
+                            <h2>
+
+                                <a href="{{ url_for(
+                                    'main.view_post',
+                                    post_id=post.id
+                                ) }}">
+
+                                    {{ post.title }}
+
+                                </a>
+
+                            </h2>
+
+                            <div class="post-meta">
+
+                                {{ post.created_at.strftime(
+                                    '%d %b %Y'
+                                ) }}
+
+                                ·
+
+                                {% if post.published %}
+
+                                    <span class="badge badge-success">
+                                        Published
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-warning">
+                                        Draft
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                            <p class="post-excerpt">
+
+                                {% if post.content|length > 120 %}
+
+                                    {{ post.content[:120] }}...
+
+                                {% else %}
+
+                                    {{ post.content }}
+
+                                {% endif %}
+
+                            </p>
+
+                            <div class="form-actions">
+
+                                <a
+                                    href="{{ url_for(
+                                        'main.view_post',
+                                        post_id=post.id
+                                    ) }}"
+                                    class="btn btn-secondary btn-small"
+                                >
+                                    View
+                                </a>
+
+                                <a
+                                    href="{{ url_for(
+                                        'main.edit_post',
+                                        post_id=post.id
+                                    ) }}"
+                                    class="btn btn-primary btn-small"
+                                >
+                                    Edit
+                                </a>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'main.delete_post',
+                                        post_id=post.id
+                                    ) }}"
+                                    onsubmit="return confirm(
+                                        'Are you sure you want to delete this post?'
+                                    );"
+                                    style="display:inline;"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-danger btn-small"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </div>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <h2>
+                    You haven't created any posts yet.
+                </h2>
+
+                <p>
+                    Start sharing your ideas with the world.
+                </p>
+
+                <a
+                    href="{{ url_for('main.create_post') }}"
+                    class="btn btn-primary"
+                >
+                    Create Your First Post
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+</div>
+
+{% endblock %}

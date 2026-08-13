@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Admin Dashboard - MultiUserBlog
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <!-- =================================================
+         ADMIN HEADER
+    ================================================== -->
+
+    <section class="admin-header">
+
+        <h1>
+            Admin Dashboard
+        </h1>
+
+        <p>
+            Manage users and blog posts.
+        </p>
+
+    </section>
+
+
+    <!-- =================================================
+         STATISTICS
+    ================================================== -->
+
+    <section class="dashboard-grid">
+
+        <div class="stat-card">
+
+            <h3>
+                Total Users
+            </h3>
+
+            <div class="stat-number">
+                {{ users|length }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <h3>
+                Total Posts
+            </h3>
+
+            <div class="stat-number">
+                {{ posts|length }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <h3>
+                Administrators
+            </h3>
+
+            <div class="stat-number">
+
+                {{ users|selectattr(
+                    'role',
+                    'equalto',
+                    'admin'
+                )|list|length }}
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         USER MANAGEMENT
+    ================================================== -->
+
+    <section class="admin-section">
+
+        <h2>
+            User Management
+        </h2>
+
+
+        <div class="dashboard-table-wrapper">
+
+            <table class="dashboard-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            ID
+                        </th>
+
+                        <th>
+                            Name
+                        </th>
+
+                        <th>
+                            Username
+                        </th>
+
+                        <th>
+                            Email
+                        </th>
+
+                        <th>
+                            Role
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for user in users %}
+
+                        <tr>
+
+                            <td>
+                                {{ user.id }}
+                            </td>
+
+
+                            <td>
+                                {{ user.full_name }}
+                            </td>
+
+
+                            <td>
+                                @{{ user.username }}
+                            </td>
+
+
+                            <td>
+                                {{ user.email }}
+                            </td>
+
+
+                            <td>
+
+                                {% if user.role == 'admin' %}
+
+                                    <span class="badge badge-admin">
+                                        Admin
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-user">
+                                        User
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if user.id != current_user.id %}
+
+                                    {% if user.role == 'admin' %}
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for(
+                                                'admin.make_user',
+                                                user_id=user.id
+                                            ) }}"
+                                            style="display:inline;"
+                                            onsubmit="return confirm(
+                                                'Remove administrator privileges from this user?'
+                                            );"
+                                        >
+
+                                            <button
+                                                type="submit"
+                                                class="btn btn-secondary btn-small"
+                                            >
+                                                Make User
+                                            </button>
+
+                                        </form>
+
+                                    {% else %}
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for(
+                                                'admin.make_admin',
+                                                user_id=user.id
+                                            ) }}"
+                                            style="display:inline;"
+                                            onsubmit="return confirm(
+                                                'Make this user an administrator?'
+                                            );"
+                                        >
+
+                                            <button
+                                                type="submit"
+                                                class="btn btn-primary btn-small"
+                                            >
+                                                Make Admin
+                                            </button>
+
+                                        </form>
+
+                                    {% endif %}
+
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'admin.delete_user',
+                                            user_id=user.id
+                                        ) }}"
+                                        style="display:inline;"
+                                        onsubmit="return confirm(
+                                            'Delete this user and their posts?'
+                                        );"
+                                    >
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-danger btn-small"
+                                        >
+                                            Delete
+                                        </button>
+
+                                    </form>
+
+                                {% else %}
+
+                                    <span>
+                                        Current User
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+
+                    {% else %}
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                style="text-align:center;"
+                            >
+                                No users found.
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         POST MANAGEMENT
+    ================================================== -->
+
+    <section class="admin-section">
+
+        <h2>
+            Post Management
+        </h2>
+
+
+        <div class="dashboard-table-wrapper">
+
+            <table class="dashboard-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            ID
+                        </th>
+
+                        <th>
+                            Title
+                        </th>
+
+                        <th>
+                            Author
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Date
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for post in posts %}
+
+                        <tr>
+
+                            <td>
+                                {{ post.id }}
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'main.view_post',
+                                        post_id=post.id
+                                    ) }}"
+                                >
+
+                                    {{ post.title }}
+
+                                </a>
+
+                            </td>
+
+
+                            <td>
+                                {{ post.author.username }}
+                            </td>
+
+
+                            <td>
+
+                                {% if post.published %}
+
+                                    <span class="badge badge-success">
+                                        Published
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-warning">
+                                        Draft
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {{ post.created_at.strftime(
+                                    '%d %b %Y'
+                                ) }}
+
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'main.view_post',
+                                        post_id=post.id
+                                    ) }}"
+                                    class="btn btn-secondary btn-small"
+                                >
+                                    View
+                                </a>
+
+
+                                <a
+                                    href="{{ url_for(
+                                        'main.edit_post',
+                                        post_id=post.id
+                                    ) }}"
+                                    class="btn btn-primary btn-small"
+                                >
+                                    Edit
+                                </a>
+
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'admin.delete_post',
+                                        post_id=post.id
+                                    ) }}"
+                                    style="display:inline;"
+                                    onsubmit="return confirm(
+                                        'Delete this post?'
+                                    );"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-danger btn-small"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </form>
+
+                            </td>
+
+                        </tr>
+
+
+                    {% else %}
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                style="text-align:center;"
+                            >
+                                No posts found.
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
