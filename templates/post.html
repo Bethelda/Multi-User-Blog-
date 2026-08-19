@@ -2,40 +2,97 @@
 
 {% block content %}
 
-<article class="single-post">
+<div class="post-container">
+
+    <!-- ==================================================
+         POST HEADER
+    ================================================== -->
+
+    <div class="post-header">
+
+        <h1>
+            {{ post.title }}
+        </h1>
+
+
+        <!-- ==================================================
+             AUTHOR INFORMATION
+        ================================================== -->
+
+        <div class="post-author">
+
+            {% if post.author.profile_image %}
+
+                <img
+                    src="{{ url_for(
+                        'static',
+                        filename='uploads/' + post.author.profile_image
+                    ) }}"
+                    alt="{{ post.author.full_name }}"
+                    class="author-avatar"
+                >
+
+            {% else %}
+
+                <img
+                    src="{{ url_for(
+                        'static',
+                        filename='images/default-avatar.png'
+                    ) }}"
+                    alt="{{ post.author.full_name }}"
+                    class="author-avatar"
+                >
+
+            {% endif %}
+
+
+            <div class="author-info">
+
+                <a
+                    href="{{ url_for(
+                        'main.user_profile',
+                        username=post.author.username
+                    ) }}"
+                    class="author-name"
+                >
+                    {{ post.author.full_name }}
+                </a>
+
+                <span class="author-username">
+                    @{{ post.author.username }}
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         MAIN POST IMAGE
+    ================================================== -->
 
     {% if post.image %}
 
-    <div class="post-image-container">
+        <div class="post-main-image">
 
-        <img
-            src="{{ url_for('static', filename='uploads/' + post.image) }}"
-            alt="{{ post.title }}"
-            class="post-main-image"
-        >
+            <img
+                src="{{ url_for(
+                    'static',
+                    filename='uploads/' + post.image
+                ) }}"
+                alt="{{ post.title }}"
+            >
 
-    </div>
+        </div>
 
     {% endif %}
 
 
-    <h1>
-        {{ post.title }}
-    </h1>
-
-
-    <div class="post-meta">
-
-        <span>
-            By {{ post.author.full_name }}
-        </span>
-
-        <span>
-            {{ post.created_at.strftime('%d %B %Y') }}
-        </span>
-
-    </div>
-
+    <!-- ==================================================
+         POST CONTENT
+    ================================================== -->
 
     <div class="post-content">
 
@@ -44,52 +101,846 @@
     </div>
 
 
-    {% if current_user.is_authenticated %}
+    <!-- ==================================================
+         ADDITIONAL IMAGES
+    ================================================== -->
 
-        {% if current_user.id == post.user_id
-              or current_user.role == 'admin' %}
+    {% if post.images %}
 
-            <div class="post-actions">
+        <div class="post-gallery">
 
-                <a
-                    href="{{ url_for('main.edit_post', post_id=post.id) }}"
-                    class="btn btn-primary"
-                >
-                    Edit
-                </a>
+            {% for image in post.images %}
 
+                <div class="gallery-image">
 
-                <form
-                    method="POST"
-                    action="{{ url_for('main.delete_post', post_id=post.id) }}"
-                    style="display: inline;"
-                >
-
-                    <button
-                        type="submit"
-                        class="btn btn-danger"
-                        onclick="return confirm('Are you sure you want to delete this post?');"
+                    <img
+                        src="{{ url_for(
+                            'static',
+                            filename='uploads/' + image.image_filename
+                        ) }}"
+                        alt="{{ post.title }}"
                     >
-                        Delete
-                    </button>
 
-                </form>
+                </div>
 
-            </div>
+            {% endfor %}
 
-        {% endif %}
+        </div>
 
     {% endif %}
 
 
-    <div class="back-link">
+    <!-- ==================================================
+         POST STATISTICS
+    ================================================== -->
 
-        <a href="{{ url_for('main.index') }}">
-            ← Back to Home
-        </a>
+    <div class="post-stats">
+
+        <span>
+            ❤️
+            {{ post.likes | length }}
+            Likes
+        </span>
+
+        <span>
+            💬
+            {{ comments | length }}
+            Comments
+        </span>
+
+        <span>
+            👁️
+            {{ unique_view_count }}
+            Views
+        </span>
 
     </div>
 
-</article>
+
+    <!-- ==================================================
+         ACTION BUTTONS
+    ================================================== -->
+
+    <div class="post-actions">
+
+        <!-- ==================================================
+             LIKE / UNLIKE
+        ================================================== -->
+
+        {% if current_user.is_authenticated %}
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'main.like_post',
+                    post_id=post.id
+                ) }}"
+                class="inline-form"
+            >
+
+                {% if user_liked %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-secondary"
+                    >
+                        Unlike
+                    </button>
+
+                {% else %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Like
+                    </button>
+
+                {% endif %}
+
+            </form>
+
+        {% else %}
+
+            <a
+                href="{{ url_for('auth.login') }}"
+                class="btn btn-primary"
+            >
+                Login to Like
+            </a>
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             SHARE BUTTON
+        ================================================== -->
+
+        <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="openShareMenu()"
+        >
+            Share Post
+        </button>
+
+    </div>
+
+
+    <!-- ==================================================
+         SHARE MESSAGE
+    ================================================== -->
+
+    <div
+        id="share-message"
+        class="share-message"
+        style="display: none;"
+    ></div>
+
+
+    <!-- ==================================================
+         SHARE MENU
+    ================================================== -->
+
+    <div
+        id="share-menu"
+        class="share-menu"
+        style="display: none;"
+    >
+
+        <div class="share-menu-content">
+
+            <div class="share-menu-header">
+
+                <h3>
+                    Share this post
+                </h3>
+
+                <button
+                    type="button"
+                    class="share-close-button"
+                    onclick="closeShareMenu()"
+                    aria-label="Close share menu"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="share-options">
+
+                <!-- ==================================================
+                     WHATSAPP
+                ================================================== -->
+
+                <button
+                    type="button"
+                    class="share-option"
+                    onclick="shareToWhatsApp()"
+                >
+                    <span class="share-icon">
+                        🟢
+                    </span>
+
+                    <span>
+                        WhatsApp
+                    </span>
+                </button>
+
+
+                <!-- ==================================================
+                     FACEBOOK
+                ================================================== -->
+
+                <button
+                    type="button"
+                    class="share-option"
+                    onclick="shareToFacebook()"
+                >
+                    <span class="share-icon">
+                        🔵
+                    </span>
+
+                    <span>
+                        Facebook
+                    </span>
+                </button>
+
+
+                <!-- ==================================================
+                     TELEGRAM
+                ================================================== -->
+
+                <button
+                    type="button"
+                    class="share-option"
+                    onclick="shareToTelegram()"
+                >
+                    <span class="share-icon">
+                        ✈️
+                    </span>
+
+                    <span>
+                        Telegram
+                    </span>
+                </button>
+
+
+                <!-- ==================================================
+                     EMAIL
+                ================================================== -->
+
+                <button
+                    type="button"
+                    class="share-option"
+                    onclick="shareByEmail()"
+                >
+                    <span class="share-icon">
+                        📧
+                    </span>
+
+                    <span>
+                        Email
+                    </span>
+                </button>
+
+
+                <!-- ==================================================
+                     COPY LINK
+                ================================================== -->
+
+                <button
+                    type="button"
+                    class="share-option"
+                    onclick="copyPostLink()"
+                >
+                    <span class="share-icon">
+                        🔗
+                    </span>
+
+                    <span>
+                        Copy Link
+                    </span>
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         VIEWERS
+    ================================================== -->
+
+    {% if viewers %}
+
+        <div class="post-viewers">
+
+            <h3>
+                Registered Viewers
+            </h3>
+
+            <ul>
+
+                {% for viewer in viewers %}
+
+                    <li>
+
+                        <a
+                            href="{{ url_for(
+                                'main.user_profile',
+                                username=viewer.username
+                            ) }}"
+                        >
+                            {{ viewer.full_name }}
+                        </a>
+
+                        <span>
+                            @{{ viewer.username }}
+                        </span>
+
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- ==================================================
+         COMMENTS SECTION
+    ================================================== -->
+
+    <div class="comments-section">
+
+        <h2>
+            Comments
+        </h2>
+
+
+        <!-- ==================================================
+             ADD COMMENT
+        ================================================== -->
+
+        {% if current_user.is_authenticated %}
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'main.add_comment',
+                    post_id=post.id
+                ) }}"
+                class="comment-form"
+            >
+
+                <textarea
+                    name="content"
+                    rows="4"
+                    placeholder="Write a comment..."
+                    required
+                ></textarea>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Add Comment
+                </button>
+
+            </form>
+
+        {% else %}
+
+            <p>
+
+                <a href="{{ url_for('auth.login') }}">
+                    Login
+                </a>
+
+                to leave a comment.
+
+            </p>
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             EXISTING COMMENTS
+        ================================================== -->
+
+        {% if comments %}
+
+            <div class="comments-list">
+
+                {% for comment in comments %}
+
+                    <div class="comment">
+
+                        <div class="comment-header">
+
+                            {% if comment.user.profile_image %}
+
+                                <img
+                                    src="{{ url_for(
+                                        'static',
+                                        filename='uploads/' + comment.user.profile_image
+                                    ) }}"
+                                    alt="{{ comment.user.full_name }}"
+                                    class="comment-avatar"
+                                >
+
+                            {% else %}
+
+                                <img
+                                    src="{{ url_for(
+                                        'static',
+                                        filename='images/default-avatar.png'
+                                    ) }}"
+                                    alt="{{ comment.user.full_name }}"
+                                    class="comment-avatar"
+                                >
+
+                            {% endif %}
+
+
+                            <div>
+
+                                <a
+                                    href="{{ url_for(
+                                        'main.user_profile',
+                                        username=comment.user.username
+                                    ) }}"
+                                    class="comment-author"
+                                >
+                                    {{ comment.user.full_name }}
+                                </a>
+
+                                <span>
+                                    @{{ comment.user.username }}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="comment-content">
+
+                            {{ comment.content | replace('\n', '<br>') | safe }}
+
+                        </div>
+
+
+                        <!-- ==================================================
+                             DELETE COMMENT
+                        ================================================== -->
+
+                        {% if current_user.is_authenticated and (
+                            current_user.id == comment.user_id
+                            or current_user.role == "admin"
+                        ) %}
+
+                            <form
+                                method="POST"
+                                action="{{ url_for(
+                                    'main.delete_comment',
+                                    comment_id=comment.id
+                                ) }}"
+                            >
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-danger"
+                                >
+                                    Delete
+                                </button>
+
+                            </form>
+
+                        {% endif %}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <p>
+                No comments yet.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ==================================================
+         EDIT / DELETE FOR OWNER OR ADMIN
+    ================================================== -->
+
+    {% if current_user.is_authenticated and (
+        current_user.id == post.user_id
+        or current_user.role == "admin"
+    ) %}
+
+        <div class="post-management">
+
+            <a
+                href="{{ url_for(
+                    'main.edit_post',
+                    post_id=post.id
+                ) }}"
+                class="btn btn-secondary"
+            >
+                Edit Post
+            </a>
+
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'main.delete_post',
+                    post_id=post.id
+                ) }}"
+                style="display: inline;"
+                onsubmit="return confirm(
+                    'Are you sure you want to delete this post?'
+                );"
+            >
+
+                <button
+                    type="submit"
+                    class="btn btn-danger"
+                >
+                    Delete Post
+                </button>
+
+            </form>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ======================================================
+     SHARE POST JAVASCRIPT
+====================================================== -->
+
+<script>
+
+/* ======================================================
+   GET POST SHARE INFORMATION
+====================================================== */
+
+const shareUrl = window.location.href;
+
+const shareTitle = {{ post.title | tojson }};
+
+const shareText =
+    "Check out this post: " + shareTitle;
+
+
+/* ======================================================
+   OPEN SHARE MENU
+====================================================== */
+
+function openShareMenu() {
+
+    const shareMenu =
+        document.getElementById("share-menu");
+
+    if (!shareMenu) {
+        return;
+    }
+
+    shareMenu.style.display = "flex";
+}
+
+
+/* ======================================================
+   CLOSE SHARE MENU
+====================================================== */
+
+function closeShareMenu() {
+
+    const shareMenu =
+        document.getElementById("share-menu");
+
+    if (!shareMenu) {
+        return;
+    }
+
+    shareMenu.style.display = "none";
+}
+
+
+/* ======================================================
+   WHATSAPP SHARE
+====================================================== */
+
+function shareToWhatsApp() {
+
+    const whatsappUrl =
+        "https://wa.me/?text=" +
+        encodeURIComponent(
+            shareText + "\n\n" + shareUrl
+        );
+
+    window.open(
+        whatsappUrl,
+        "_blank",
+        "noopener,noreferrer"
+    );
+
+    closeShareMenu();
+}
+
+
+/* ======================================================
+   FACEBOOK SHARE
+====================================================== */
+
+function shareToFacebook() {
+
+    const facebookUrl =
+        "https://www.facebook.com/sharer/sharer.php?u=" +
+        encodeURIComponent(shareUrl);
+
+    window.open(
+        facebookUrl,
+        "_blank",
+        "noopener,noreferrer,width=600,height=500"
+    );
+
+    closeShareMenu();
+}
+
+
+/* ======================================================
+   TELEGRAM SHARE
+====================================================== */
+
+function shareToTelegram() {
+
+    const telegramUrl =
+        "https://t.me/share/url?url=" +
+        encodeURIComponent(shareUrl) +
+        "&text=" +
+        encodeURIComponent(shareText);
+
+    window.open(
+        telegramUrl,
+        "_blank",
+        "noopener,noreferrer"
+    );
+
+    closeShareMenu();
+}
+
+
+/* ======================================================
+   EMAIL SHARE
+====================================================== */
+
+function shareByEmail() {
+
+    const subject =
+        encodeURIComponent(shareTitle);
+
+    const body =
+        encodeURIComponent(
+            shareText +
+            "\n\n" +
+            shareUrl
+        );
+
+    window.location.href =
+        "mailto:?subject=" +
+        subject +
+        "&body=" +
+        body;
+
+    closeShareMenu();
+}
+
+
+/* ======================================================
+   COPY POST LINK
+====================================================== */
+
+function copyPostLink() {
+
+    if (
+        navigator.clipboard &&
+        window.isSecureContext
+    ) {
+
+        navigator.clipboard.writeText(
+            shareUrl
+        )
+        .then(function () {
+
+            showShareMessage(
+                "Post link copied to clipboard."
+            );
+
+            closeShareMenu();
+
+        })
+        .catch(function () {
+
+            fallbackCopy(shareUrl);
+
+        });
+
+        return;
+    }
+
+    fallbackCopy(shareUrl);
+}
+
+
+/* ======================================================
+   FALLBACK COPY METHOD
+====================================================== */
+
+function fallbackCopy(url) {
+
+    const textArea =
+        document.createElement("textarea");
+
+    textArea.value = url;
+
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+
+    document.body.appendChild(
+        textArea
+    );
+
+    textArea.focus();
+    textArea.select();
+
+    try {
+
+        document.execCommand("copy");
+
+        showShareMessage(
+            "Post link copied to clipboard."
+        );
+
+        closeShareMenu();
+
+    } catch (error) {
+
+        showShareMessage(
+            "Copy failed. Please copy the URL manually."
+        );
+
+    }
+
+    document.body.removeChild(
+        textArea
+    );
+}
+
+
+/* ======================================================
+   SHARE MESSAGE
+====================================================== */
+
+function showShareMessage(message) {
+
+    const messageBox =
+        document.getElementById(
+            "share-message"
+        );
+
+    if (!messageBox) {
+        return;
+    }
+
+    messageBox.textContent =
+        message;
+
+    messageBox.style.display =
+        "block";
+
+    setTimeout(function () {
+
+        messageBox.style.display =
+            "none";
+
+    }, 3000);
+}
+
+
+/* ======================================================
+   CLOSE SHARE MENU WHEN CLICKING OUTSIDE
+====================================================== */
+
+document.addEventListener(
+    "click",
+    function(event) {
+
+        const shareMenu =
+            document.getElementById(
+                "share-menu"
+            );
+
+        const shareButton =
+            event.target.closest(
+                ".post-actions button"
+            );
+
+        const shareContent =
+            event.target.closest(
+                ".share-menu-content"
+            );
+
+        if (
+            shareMenu &&
+            shareMenu.style.display === "flex" &&
+            !shareContent &&
+            !shareButton
+        ) {
+
+            closeShareMenu();
+
+        }
+
+    }
+);
+
+
+/* ======================================================
+   CLOSE SHARE MENU WITH ESCAPE KEY
+====================================================== */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Escape") {
+
+            closeShareMenu();
+
+        }
+
+    }
+);
+
+</script>
 
 {% endblock %}
